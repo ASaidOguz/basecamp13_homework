@@ -129,7 +129,6 @@ fn test_set_counter_non_owner(){
 
    start_cheat_caller_address(counter_dispatcher.contract_address, non_owner_address());
    counter_dispatcher.set_counter(10);// <-- should panic here
-   stop_cheat_caller_address(counter_dispatcher.contract_address);
 }
 
 #[test]
