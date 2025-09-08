@@ -1,5 +1,5 @@
 #[starknet::interface]
-trait ICounter <T>{
+pub trait ICounter <T>{
   fn get_counter(self:@T) -> u32;
   fn increase_counter(ref self:T);
   fn decrease_counter(ref self:T);
@@ -7,8 +7,9 @@ trait ICounter <T>{
   fn reset_counter(ref self:T);
 }
 #[starknet::contract]
-mod CounterContract{
-  use OwnableComponent::InternalTrait;
+pub mod CounterContract{
+  use crate::Utils::stark_address;
+use OwnableComponent::InternalTrait;
 use super::ICounter;
   use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
   use starknet::{ContractAddress,get_caller_address,get_contract_address};
@@ -21,22 +22,22 @@ use super::ICounter;
 
   #[event]
   #[derive(Drop,starknet::Event)]
-  enum Event{
+  pub enum Event{
     CounterChanged:CounterChanged,
     #[flat]
     OwnableEvent:OwnableComponent::Event,
   }
 
   #[derive(Drop,starknet::Event)]
-  struct CounterChanged{
-    caller:ContractAddress,
-    old_value:u32,
-    new_value:u32,
-    reason:ChangeReason,
+  pub struct CounterChanged{
+    pub caller:ContractAddress,
+    pub old_value:u32,
+    pub new_value:u32,
+    pub reason:ChangeReason,
   }
 
   #[derive(Drop,Copy,Serde)]
-  enum ChangeReason{
+  pub enum ChangeReason{
     Increase,
     Decrease,
     Reset,
@@ -103,7 +104,7 @@ use super::ICounter;
     // need to pay 1 STRK to reset the counter -> user needs to approve for the contract.
     fn reset_counter(ref self:ContractState){
       let payment:u256 = 1_000_000_000_000_000_000;
-      let strk_token:ContractAddress = 0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d.try_into().unwrap();
+      let strk_token:ContractAddress = stark_address();
       
       let caller = get_caller_address();
       let token_dispatcher = IERC20Dispatcher{contract_address:strk_token};
