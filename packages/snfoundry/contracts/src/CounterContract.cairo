@@ -30,9 +30,13 @@ use super::ICounter;
 
   #[derive(Drop,starknet::Event)]
   pub struct CounterChanged{
+    #[key]
     pub caller:ContractAddress,
+    #[key]
     pub old_value:u32,
+    #[key]
     pub new_value:u32,
+    #[key]
     pub reason:ChangeReason,
   }
 
