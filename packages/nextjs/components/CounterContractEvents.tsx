@@ -68,7 +68,7 @@ export const CounterContractEvents = () => {
   const { data, isLoading, error } = useScaffoldEventHistory({
     contractName: "CounterContract",
     eventName: "CounterChanged",
-    fromBlock: BigInt(1),
+    fromBlock: BigInt(2026708),
     filters: {},
     blockData: true,
     watch: false,
