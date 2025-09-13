@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useScaffoldEventHistory } from "~~/hooks/scaffold-stark/useScaffoldEventHistory";
 import { useScaffoldWatchContractEvent } from "~~/hooks/scaffold-stark/useScaffoldWatchContractEvent";
 
@@ -17,7 +17,7 @@ interface CounterEvent {
   reason: CounterChangeReason;
 }
 
-// parse helper
+// parse helpers
 function parseCairoEnum<T extends Record<string, any> | undefined>(
   enumObj: T
 ): { variant: keyof NonNullable<T>; value: any } | null {
@@ -37,19 +37,15 @@ function parseNestedCairoEnum(eventArgs: any): CounterChangeReason | null {
     eventArgs?.change_reason,
     eventArgs?.changeReason,
   ];
-
   for (const path of possiblePaths) {
     if (path) {
       const parsed = parseCairoEnum(path);
-      if (parsed) {
-        return parsed as CounterChangeReason;
-      }
+      if (parsed) return parsed as CounterChangeReason;
     }
   }
   return null;
 }
 
-// safely stringify values (converts BigInt -> string)
 const safeStringify = (v: any) => {
   if (v === undefined || v === null) return "";
   if (typeof v === "bigint") return v.toString();
@@ -66,42 +62,38 @@ const safeStringify = (v: any) => {
 };
 
 export const CounterContractEvents = () => {
+  const [events, setEvents] = useState<CounterEvent[]>([]);
+
+  // 1. Fetch event history once
   const { data, isLoading, error } = useScaffoldEventHistory({
     contractName: "CounterContract",
     eventName: "CounterChanged",
-    fromBlock: BigInt(0),
+    fromBlock: BigInt(1),
     filters: {},
     blockData: true,
-    transactionData: false,
-    receiptData: false,
     watch: false,
     enabled: true,
+  });  console.log("Fetched event history:", data);
+
+
+  // 2. Watch new events (live updates)
+  useScaffoldWatchContractEvent({
+    contractName: "CounterContract",
+    eventName: "CounterChanged",
+    onLogs: (log) => {
+      if (!log) return;
+      const args = log.parsedArgs ?? log.args;
+      const event: CounterEvent = {
+        caller: args?.caller ?? "",
+        oldValue: BigInt(args?.old_value ?? args?.oldValue ?? 0),
+        newValue: BigInt(args?.new_value ?? args?.newValue ?? 0),
+        reason: parseNestedCairoEnum(args) ?? { variant: "Set", value: {} },
+      };
+      console.log("📡 CounterChanged event", event);
+      setEvents((prev) => [...prev, event]); // append to history
+    },
   });
 
-useScaffoldWatchContractEvent({
-  contractName: "CounterContract",
-  eventName: "CounterChanged",
-  onLogs: (log) => {
-    if (!log) return;
-
-    const args = log.parsedArgs ?? log.args;
-
-    const event: CounterEvent = {
-      caller: args?.caller ?? "",
-      oldValue: BigInt(args?.old_value ?? args?.oldValue ?? 0),
-      newValue: BigInt(args?.new_value ?? args?.newValue ?? 0),
-      reason: parseNestedCairoEnum(args) ?? { variant: "Set", value: {} },
-    };
-
-    console.log("📡 CounterChanged event", event);
-
-    setEvents((prev) => [...prev, event]);
-  },
-});
-
-
-  const [events, setEvents] = useState<CounterEvent[]>([]);
-  
   if (isLoading) return <div>Loading events...</div>;
   if (error) return <div>Error loading events: {String(error)}</div>;
 
